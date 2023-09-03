@@ -25,7 +25,7 @@ It can also work in tablet mode if the widget's width is greater than 600dp.
 
 ```yaml
 dependencies:
-  flutter_drawer_menu: ^0.1.0
+  flutter_drawer_menu: ^0.1.1
 ```
 
 Run `flutter packages get` in the root directory of your app.
