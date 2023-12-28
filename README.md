@@ -11,17 +11,13 @@ It supports horizontal scrolling in nested widgets and intercepts OverscrollNoti
 
 It can also work in tablet mode if the widget's width is greater than 600dp.
 
-| Android                        | iOS                    |
-|--------------------------------|------------------------|
-| ![Android](images/android.gif) | ![iOS](images/ios.gif) |
+| Android                        | iOS                    | Custom menu background                    |
+|--------------------------------|------------------------|-------------------------------------------|
+| ![Android](images/android.gif) | ![iOS](images/ios.gif) | ![Custom](images/android_custom_menu.jpg) |
 
 | Tablet mode                       |
 |-----------------------------------|
 | ![Tablet](images/tablet_menu.gif) |
-
-| Custom menu background                    |
-|-------------------------------------------|
-| ![Tablet](images/android_custom_menu.jpg) |
 
 ## Usage
 
