@@ -1,28 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter_drawer_menu/drawer_menu.dart';
+import 'package:flutter_drawer_menu/src/drawer_menu.dart';
 
 /// Manager for creating a scroll listener
 /// that intercept [OverscrollNotification] events within the body
 /// and set the required menu offset.
 class ScrollNotificationManager {
-
-  final ScrollController scrollController;
-  final DrawerMenuState state;
+  final ScrollController _scrollController;
+  final DrawerMenuState _state;
   ScrollDragController? _dragScroller;
   DragStartDetails? _dragStartDetails;
 
-  ScrollNotificationManager({
-    required this.scrollController,
-    required this.state
-  });
+  ScrollNotificationManager(
+      {required ScrollController scrollController,
+      required DrawerMenuState state})
+      : _state = state,
+        _scrollController = scrollController;
 
-  Widget buildListener({required Widget child}) {
-    return NotificationListener<ScrollNotification>(
-      onNotification: _onNotification,
-      child: child,
-    );
-  }
+  Widget buildListener({required Widget child}) =>
+      NotificationListener<ScrollNotification>(
+        onNotification: _onNotification,
+        child: child,
+      );
 
   bool _onNotification(ScrollNotification notification) {
     if (notification is ScrollStartNotification) {
@@ -30,10 +29,12 @@ class ScrollNotificationManager {
     }
 
     if (notification is OverscrollNotification) {
-      var isHorizontalDrag = (notification.dragDetails?.delta.dx ?? 0.0).abs() > 0;
-      if(isHorizontalDrag) {
+      final isHorizontalDrag =
+          (notification.dragDetails?.delta.dx ?? 0.0).abs() > 0;
+      if (isHorizontalDrag) {
         if (_dragScroller == null && _dragStartDetails != null) {
-          final scrollPosition = scrollController.position as ScrollPositionWithSingleContext;
+          final scrollPosition =
+              _scrollController.position as ScrollPositionWithSingleContext;
           _dragScroller = scrollPosition.drag(_dragStartDetails!, () {
             _dragScroller = null;
           }) as ScrollDragController;
@@ -46,10 +47,10 @@ class ScrollNotificationManager {
     }
 
     if (notification is ScrollUpdateNotification) {
-      if(_dragScroller != null) {
+      if (_dragScroller != null) {
         _dragStartDetails = null;
         _dragScroller?.cancel();
-        state.close();
+        _state.close();
       }
       return false;
     }

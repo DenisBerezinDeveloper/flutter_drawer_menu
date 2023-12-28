@@ -1,15 +1,13 @@
 import 'package:flutter/foundation.dart';
-
-import 'drawer_menu.dart';
-
+import 'package:flutter_drawer_menu/src/drawer_menu.dart';
 
 /// Control tool for DrawerMenu behavior.
 /// It also allows subscribing to events for DrawerMenu state changes.
 class DrawerMenuController {
-
   /// private [ValueNotifier] objects
   final ValueNotifier<bool> _isOpenNotifier = ValueNotifier<bool>(false);
-  final ValueNotifier<double> _scrollPositionNotifier = ValueNotifier<double>(0.0);
+  final ValueNotifier<double> _scrollPositionNotifier =
+      ValueNotifier<double>(0);
   final ValueNotifier<bool> _isTabletModeNotifier = ValueNotifier<bool>(false);
 
   /// public [ValueListenable] objects
@@ -34,6 +32,7 @@ class DrawerMenuController {
   DrawerMenuController();
 
   /// Register [DrawerMenuState]
+  /// ignore: use_setters_to_change_properties
   void registerState(DrawerMenuState state) {
     _state = state;
   }
@@ -56,21 +55,18 @@ class DrawerMenuController {
 
   /// Open the menu.
   /// [animated] - do it with animation.
-  Future open({bool animated = true}) {
-    return _state?.open(animated: animated) ?? Future.value();
-  }
+  Future open({bool animated = true}) =>
+      _state?.open(animated: animated) ?? Future.value();
 
   /// Close the menu.
   /// [animated] - do it with animation.
-  Future close({bool animated = true}) {
-    return _state?.close(animated: animated) ?? Future.value();
-  }
+  Future close({bool animated = true}) =>
+      _state?.close(animated: animated) ?? Future.value();
 
   /// Open or close the menu.
   /// [animated] - do it with animation.
-  Future toggle({bool animated = true}) {
-    return _state?.toggle(animated: animated) ?? Future.value();
-  }
+  Future toggle({bool animated = true}) =>
+      _state?.toggle(animated: animated) ?? Future.value();
 
   /// Allow menu to be moved by gestures.
   void enableDragging() {

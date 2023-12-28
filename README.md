@@ -11,13 +11,17 @@ It supports horizontal scrolling in nested widgets and intercepts OverscrollNoti
 
 It can also work in tablet mode if the widget's width is greater than 600dp.
 
-| Android                             | iOS                             |
-| -------------------------------- | ----------------------------------- |
+| Android                        | iOS                    |
+|--------------------------------|------------------------|
 | ![Android](images/android.gif) | ![iOS](images/ios.gif) |
 
-| Tablet mode                              |
-| --------------------------------- |
+| Tablet mode                       |
+|-----------------------------------|
 | ![Tablet](images/tablet_menu.gif) |
+
+| Custom menu background                    |
+|-------------------------------------------|
+| ![Tablet](images/android_custom_menu.jpg) |
 
 ## Usage
 
@@ -25,7 +29,7 @@ It can also work in tablet mode if the widget's width is greater than 600dp.
 
 ```yaml
 dependencies:
-  flutter_drawer_menu: ^0.1.1
+  flutter_drawer_menu: ^0.1.2
 ```
 
 Run `flutter packages get` in the root directory of your app.
@@ -43,70 +47,92 @@ Now you can use `DrawerMenu` as a widget in your code.
 If you want to manage the state of the `DrawerMenu` or subscribe to events, you need to create a `DrawerMenuController`.
 
 ```dart
+
 final _controller = DrawerMenuController();
 ```
 
 Creating the menu.
 
 ```dart
-DrawerMenu(
-  controller: _controller,
-  menu: _buildMenu(),
-  body: _buildBody(),
+DrawerMenu
+(
+controller: _controller,
+menu: _buildMenu(),
+body:
+_buildBody
+(
+)
+,
 );
 ```
 
-If you want to configure a transparent navigation bar for Android the same way as in the example, you need to call the following once (e.g., in `initState`):
+If you want to configure a transparent navigation bar for Android the same way as in the example, you need to call the following once (e.g.,
+in `initState`):
+
 ```dart
-SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+SystemChrome.setEnabledSystemUIMode
+(
+SystemUiMode
+.
+edgeToEdge
+);
 ```
+
 and set the fields of `SystemUiOverlayStyle`:
+
 ```dart
-systemNavigationBarColor: Colors.transparent,
-systemNavigationBarContrastEnforced: false,
+systemNavigationBarColor: Colors.transparent,systemNavigationBarContrastEnforced: false
+,
 ```
 
 How to manage DrawerMenu.
+
 ```dart
-_controller.open(animated: true);
+_controller.open
+(
+animated: true);
 _controller.close(animated: true);
 _controller.toggle(animated: true);
 ```
 
 You can subscribe to state change events isOpen, scrollPosition, isTablet using the controller.
+
 ```dart
-ValueListenableBuilder<bool>(
-  valueListenable: _controller.isOpenNotifier,
-  builder: (context, value, _) {
-    return Text(value ? "open": "closed");
-  }
+ValueListenableBuilder<bool>
+(
+valueListenable: _controller.isOpenNotifier,
+builder: (context, value, _) {
+return Text(value ? "open": "closed");
+}
 )
 ```
 
 #### DrawerMenu Props
 
-| props                    |         types          |                                   description                                   |
-| :----------------------- | :--------------------: | :-----------------------------------------------------------------------------: |
-| animationDuration        |      `Duration`        | Duration of (open/closed) toggling animation (default 300ms)                    |
-| tabletModeMinScreenWidth |    `double`            |The minimum width of the DrawerMenu to activate tablet mode (show side menu).    |
-| tabletModeSideMenuWidth  |       `double`         |        The width of the side menu in tablet mode        |
-| rightMargin              |       `double`         |      Right margin for the menu. Default is 70.       |
-| controller               | `DrawerMenuController?`|Control tool for DrawerMenu behavior. It also allows subscribing to events for DrawerMenu state changes.|
-| scrimColor            |        `Color?`        | Set a color to use for the scrim that obscures primary content while a drawer is open. Default is Color(0x44ffffff).             |
-| scrimBlurEffect        |        `bool`        | Applies a blur effect when opening the menu. Default is False.                      |
-| shadowColor      |        `Color?`        | Color for the right menu shadow. Default is Color(0x22000000).                     |
-| shadowWidth          |        `double`        |Width for the right menu shadow. Default is 35.                         |
-| bodyParallaxFactor   |      `double`      | Multiplier for the parallax effect applied to the body when the menu is opened. 0 - the body moves together with the menu. 1 - the body stays in place. Default is 0.5.                   |
-| useRepaintBoundaries |      `bool`      | Use `RepaintBoundary` to isolate the rendering of the menu and body widgets for improve repaints performance. Default is True.                 |
+| props                    |          types          |                                                                               description                                                                               |
+|:-------------------------|:-----------------------:|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------:|
+| animationDuration        |       `Duration`        |                                                      Duration of (open/closed) toggling animation (default 300ms)                                                       |
+| tabletModeMinScreenWidth |        `double`         |                                              The minimum width of the DrawerMenu to activate tablet mode (show side menu).                                              |
+| tabletModeSideMenuWidth  |        `double`         |                                                                The width of the side menu in tablet mode                                                                |
+| rightMargin              |        `double`         |                                                                Right margin for the menu. Default is 70.                                                                |
+| menuOverlapWidth         |        `double`         |                 Width of the menu overlay above the body. This setting is useful for menu decoration (Shifts the shadow and scrim layer). Default is 0.                 |
+| controller               | `DrawerMenuController?` |                                Control tool for DrawerMenu behavior. It also allows subscribing to events for DrawerMenu state changes.                                 |
+| scrimColor               |        `Color?`         |                          Set a color to use for the scrim that obscures primary content while a drawer is open. Default is Color(0x44ffffff).                           |
+| scrimBlurEffect          |         `bool`          |                                                     Applies a blur effect when opening the menu. Default is False.                                                      |
+| shadowColor              |        `Color?`         |                                                     Color for the right menu shadow. Default is Color(0x22000000).                                                      |
+| shadowWidth              |        `double`         |                                                             Width for the right menu shadow. Default is 35.                                                             |
+| bodyParallaxFactor       |        `double`         | Multiplier for the parallax effect applied to the body when the menu is opened. 0 - the body moves together with the menu. 1 - the body stays in place. Default is 0.5. |
+| useRepaintBoundaries     |         `bool`          |                     Use `RepaintBoundary` to isolate the rendering of the menu and body widgets for improve repaints performance. Default is True.                      |
+| backgroundColor          |         `Color`         |                                                    Background color under the menu and body.Default is Colors.white.                                                    |
 
 ---
 
 ## Full example:
 
 ```dart
-import 'package:flutter/services.dart';
-import 'package:flutter_drawer_menu/drawer_menu.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_drawer_menu/flutter_drawer_menu.dart';
 
 void main() {
   runApp(const MyApp());
@@ -138,9 +164,10 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-
   final _controller = DrawerMenuController();
   int _selectedContent = 0;
+  final double _rightMargin = 70.0;
+  final double _menuOverlapWidth = 50;
 
   @override
   void initState() {
@@ -154,33 +181,34 @@ class _MyHomePageState extends State<MyHomePage> {
       controller: _controller,
       menu: _buildMenu(),
       body: _buildBody(),
+      rightMargin: _rightMargin,
+      menuOverlapWidth: _menuOverlapWidth,
+      shadowWidth: _rightMargin + _menuOverlapWidth,
+      shadowColor: const Color(0x66000000),
     );
   }
 
   Widget _buildMenu() {
-    final listView = ListView.builder(
-        itemBuilder: (context, index) {
-          return InkWell(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text("Content $index"),
-            ),
-            onTap: () {
-              _controller.close();
-              setState(() {
-                _selectedContent = index;
-              });
-            },
-          );
-        }
-    );
+    final listView = ListView.builder(itemBuilder: (context, index) {
+      return InkWell(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text("Content $index"),
+        ),
+        onTap: () {
+          _controller.close();
+          setState(() {
+            _selectedContent = index;
+          });
+        },
+      );
+    });
 
-    Widget menu = Container(
-      color: Colors.white,
-      child: SafeArea(
-        child: listView,
-      ),
-    );
+    Widget menu = WaveBorder(
+        waveWidth: _menuOverlapWidth,
+        child: SafeArea(
+          child: listView,
+        ));
 
     // Applying status bar and navigation bar theme settings.
     // If you want to configure a transparent navigation bar for Android
@@ -212,7 +240,7 @@ class _MyHomePageState extends State<MyHomePage> {
     Widget leadingWidget = ValueListenableBuilder<bool>(
         valueListenable: _controller.isTabletModeNotifier,
         builder: (context, value, _) {
-          if(value) {
+          if (value) {
             return const SizedBox();
           }
           return IconButton(
@@ -221,8 +249,7 @@ class _MyHomePageState extends State<MyHomePage> {
               _controller.open();
             },
           );
-        }
-    );
+        });
 
     /// PageView part
     Widget pageView = Container(
@@ -230,12 +257,13 @@ class _MyHomePageState extends State<MyHomePage> {
       height: 150,
       child: PageView.builder(
         physics: const ClampingScrollPhysics(),
-        itemBuilder: (context, index) => Center(
-          child: Text(
-            "Nested PageView\nPage $index",
-            textAlign: TextAlign.center,
-          ),
-        ),
+        itemBuilder: (context, index) =>
+            Center(
+              child: Text(
+                "Nested PageView\nPage $index",
+                textAlign: TextAlign.center,
+              ),
+            ),
       ),
     );
 
@@ -253,15 +281,13 @@ class _MyHomePageState extends State<MyHomePage> {
                   valueListenable: _controller.scrollPositionNotifier,
                   builder: (context, value, _) {
                     return Text(value.toStringAsFixed(2));
-                  }
-              ),
+                  }),
               // isOpen subscription
               ValueListenableBuilder<bool>(
                   valueListenable: _controller.isOpenNotifier,
                   builder: (context, value, _) {
-                    return Text(value ? "open": "closed");
-                  }
-              ),
+                    return Text(value ? "open" : "closed");
+                  }),
             ],
           ),
         ),
@@ -275,12 +301,53 @@ class _MyHomePageState extends State<MyHomePage> {
         leading: leadingWidget,
       ),
       body: Column(
-        children: [
-          pageView,
-          content
-        ],
+        children: [pageView, content],
       ),
     );
+  }
+}
+
+class WaveBorder extends StatelessWidget {
+  final Widget child;
+  final double waveWidth;
+
+  const WaveBorder({Key? key, required this.child, required this.waveWidth})
+      : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+        painter: WaveBorderPainter(waveWidth: waveWidth), child: child);
+  }
+}
+
+class WaveBorderPainter extends CustomPainter {
+  final double waveWidth;
+
+  WaveBorderPainter({required this.waveWidth});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+
+    final path = Path();
+
+    path.lineTo(size.width, 0);
+    path.quadraticBezierTo(size.width - waveWidth, size.height * 0.25,
+        size.width - waveWidth / 2, size.height * 0.5);
+    path.quadraticBezierTo(size.width, size.height * 0.75,
+        size.width - waveWidth / 2, size.height);
+    path.lineTo(0, size.height);
+    path.close();
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return false;
   }
 }
 ```

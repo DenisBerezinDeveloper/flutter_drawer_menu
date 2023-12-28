@@ -1,6 +1,6 @@
-import 'package:flutter/services.dart';
-import 'package:flutter_drawer_menu/drawer_menu.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_drawer_menu/flutter_drawer_menu.dart';
 
 void main() {
   runApp(const MyApp());
@@ -32,9 +32,10 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-
   final _controller = DrawerMenuController();
   int _selectedContent = 0;
+  final double _rightMargin = 70.0;
+  final double _menuOverlapWidth = 50;
 
   @override
   void initState() {
@@ -48,33 +49,34 @@ class _MyHomePageState extends State<MyHomePage> {
       controller: _controller,
       menu: _buildMenu(),
       body: _buildBody(),
+      rightMargin: _rightMargin,
+      menuOverlapWidth: _menuOverlapWidth,
+      shadowWidth: _rightMargin + _menuOverlapWidth,
+      shadowColor: const Color(0x66000000),
     );
   }
 
   Widget _buildMenu() {
-    final listView = ListView.builder(
-        itemBuilder: (context, index) {
-          return InkWell(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text("Content $index"),
-            ),
-            onTap: () {
-              _controller.close();
-              setState(() {
-                _selectedContent = index;
-              });
-            },
-          );
-        }
-    );
+    final listView = ListView.builder(itemBuilder: (context, index) {
+      return InkWell(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text("Content $index"),
+        ),
+        onTap: () {
+          _controller.close();
+          setState(() {
+            _selectedContent = index;
+          });
+        },
+      );
+    });
 
-    Widget menu = Container(
-      color: Colors.white,
-      child: SafeArea(
-        child: listView,
-      ),
-    );
+    Widget menu = WaveBorder(
+        waveWidth: _menuOverlapWidth,
+        child: SafeArea(
+          child: listView,
+        ));
 
     // Applying status bar and navigation bar theme settings.
     // If you want to configure a transparent navigation bar for Android
@@ -106,7 +108,7 @@ class _MyHomePageState extends State<MyHomePage> {
     Widget leadingWidget = ValueListenableBuilder<bool>(
         valueListenable: _controller.isTabletModeNotifier,
         builder: (context, value, _) {
-          if(value) {
+          if (value) {
             return const SizedBox();
           }
           return IconButton(
@@ -115,8 +117,7 @@ class _MyHomePageState extends State<MyHomePage> {
               _controller.open();
             },
           );
-        }
-    );
+        });
 
     /// PageView part
     Widget pageView = Container(
@@ -147,15 +148,13 @@ class _MyHomePageState extends State<MyHomePage> {
                   valueListenable: _controller.scrollPositionNotifier,
                   builder: (context, value, _) {
                     return Text(value.toStringAsFixed(2));
-                  }
-              ),
+                  }),
               // isOpen subscription
               ValueListenableBuilder<bool>(
                   valueListenable: _controller.isOpenNotifier,
                   builder: (context, value, _) {
-                    return Text(value ? "open": "closed");
-                  }
-              ),
+                    return Text(value ? "open" : "closed");
+                  }),
             ],
           ),
         ),
@@ -169,12 +168,52 @@ class _MyHomePageState extends State<MyHomePage> {
         leading: leadingWidget,
       ),
       body: Column(
-        children: [
-          pageView,
-          content
-        ],
+        children: [pageView, content],
       ),
     );
   }
 }
 
+class WaveBorder extends StatelessWidget {
+  final Widget child;
+  final double waveWidth;
+
+  const WaveBorder({Key? key, required this.child, required this.waveWidth})
+      : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+        painter: WaveBorderPainter(waveWidth: waveWidth), child: child);
+  }
+}
+
+class WaveBorderPainter extends CustomPainter {
+  final double waveWidth;
+
+  WaveBorderPainter({required this.waveWidth});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+
+    final path = Path();
+
+    path.lineTo(size.width, 0);
+    path.quadraticBezierTo(size.width - waveWidth, size.height * 0.25,
+        size.width - waveWidth / 2, size.height * 0.5);
+    path.quadraticBezierTo(size.width, size.height * 0.75,
+        size.width - waveWidth / 2, size.height);
+    path.lineTo(0, size.height);
+    path.close();
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return false;
+  }
+}
