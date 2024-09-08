@@ -163,20 +163,22 @@ abstract class ScrollView extends StatelessWidget {
     this.keyboardDismissBehavior = ScrollViewKeyboardDismissBehavior.manual,
     this.restorationId,
     this.clipBehavior = Clip.hardEdge,
-  })
-      : assert(
-  !(controller != null && (primary ?? false)),
-  'Primary ScrollViews obtain their ScrollController via inheritance '
-      'from a PrimaryScrollController widget. You cannot both '
-      'set primary to true and pass an explicit controller.',
-  ),
+  })  : assert(
+          !(controller != null && (primary ?? false)),
+          'Primary ScrollViews obtain their ScrollController via inheritance '
+          'from a PrimaryScrollController widget. You cannot both '
+          'set primary to true and pass an explicit controller.',
+        ),
         assert(!shrinkWrap || center == null),
         assert(anchor >= 0.0 && anchor <= 1.0),
         assert(semanticChildCount == null || semanticChildCount >= 0),
-        physics = physics ?? ((primary ?? false)
-            || (primary == null && controller == null
-                && identical(scrollDirection, Axis.vertical))
-            ? const AlwaysScrollableScrollPhysics() : null);
+        physics = physics ??
+            ((primary ?? false) ||
+                    (primary == null &&
+                        controller == null &&
+                        identical(scrollDirection, Axis.vertical))
+                ? const AlwaysScrollableScrollPhysics()
+                : null);
 
   /// {@template flutter.widgets.scroll_view.scrollDirection}
   /// The [Axis] along which the scroll view's offset increases.
@@ -476,10 +478,12 @@ abstract class ScrollView extends StatelessWidget {
   ///
   /// The `slivers` argument is the value obtained from [buildSlivers].
   @protected
-  Widget buildViewport(BuildContext context,
-      ViewportOffset offset,
-      AxisDirection axisDirection,
-      List<Widget> slivers,) {
+  Widget buildViewport(
+    BuildContext context,
+    ViewportOffset offset,
+    AxisDirection axisDirection,
+    List<Widget> slivers,
+  ) {
     assert(() {
       switch (axisDirection) {
         case AxisDirection.up:
@@ -520,8 +524,8 @@ abstract class ScrollView extends StatelessWidget {
     final List<Widget> slivers = buildSlivers(context);
     final AxisDirection axisDirection = getDirection(context);
 
-    final bool effectivePrimary = primary
-        ?? controller == null &&
+    final bool effectivePrimary = primary ??
+        controller == null &&
             PrimaryScrollController.shouldInherit(context, scrollDirection);
 
     final ScrollController? scrollController = effectivePrimary
@@ -542,8 +546,8 @@ abstract class ScrollView extends StatelessWidget {
     );
 
     final Widget scrollableResult = effectivePrimary && scrollController != null
-    // Further descendant ScrollViews will not inherit
-    // the same PrimaryScrollController
+        // Further descendant ScrollViews will not inherit
+        // the same PrimaryScrollController
         ? PrimaryScrollController.none(child: scrollable)
         : scrollable;
 
@@ -566,20 +570,18 @@ abstract class ScrollView extends StatelessWidget {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties..add(
-        EnumProperty<Axis>('scrollDirection', scrollDirection))..add(
-        FlagProperty(
-            'reverse', value: reverse,
-            ifTrue: 'reversed',
-            showName: true))..add(DiagnosticsProperty<ScrollController>(
-        'controller', controller, showName: false, defaultValue: null))..add(
-        FlagProperty('primary', value: primary,
-            ifTrue: 'using primary controller',
-            showName: true))..add(DiagnosticsProperty<ScrollPhysics>(
-        'physics', physics, showName: false, defaultValue: null))..add(
-        FlagProperty('shrinkWrap', value: shrinkWrap,
-            ifTrue: 'shrink-wrapping',
-            showName: true));
+    properties
+      ..add(EnumProperty<Axis>('scrollDirection', scrollDirection))
+      ..add(FlagProperty('reverse',
+          value: reverse, ifTrue: 'reversed', showName: true))
+      ..add(DiagnosticsProperty<ScrollController>('controller', controller,
+          showName: false, defaultValue: null))
+      ..add(FlagProperty('primary',
+          value: primary, ifTrue: 'using primary controller', showName: true))
+      ..add(DiagnosticsProperty<ScrollPhysics>('physics', physics,
+          showName: false, defaultValue: null))
+      ..add(FlagProperty('shrinkWrap',
+          value: shrinkWrap, ifTrue: 'shrink-wrapping', showName: true));
   }
 }
 
@@ -594,7 +596,8 @@ class Viewport extends MultiChildRenderObjectWidget {
   /// The [cacheExtent] must be specified if the [cacheExtentStyle] is
   /// not [CacheExtentStyle.pixel].
   Viewport({
-    required this.offset, super.key,
+    required this.offset,
+    super.key,
     this.axisDirection = AxisDirection.down,
     this.crossAxisDirection,
     this.anchor = 0.0,
@@ -603,10 +606,8 @@ class Viewport extends MultiChildRenderObjectWidget {
     this.cacheExtentStyle = CacheExtentStyle.pixel,
     this.clipBehavior = Clip.hardEdge,
     List<Widget> slivers = const <Widget>[],
-  })
-      : assert(center == null || slivers
-      .where((child) => child.key == center)
-      .length == 1),
+  })  : assert(center == null ||
+            slivers.where((child) => child.key == center).length == 1),
         assert(cacheExtentStyle != CacheExtentStyle.viewport ||
             cacheExtent != null),
         super(children: slivers);
@@ -681,8 +682,8 @@ class Viewport extends MultiChildRenderObjectWidget {
   ///
   /// This depends on the [Directionality] if the `axisDirection` is vertical;
   /// otherwise, the default cross axis direction is downwards.
-  static AxisDirection getDefaultCrossAxisDirection(BuildContext context,
-      AxisDirection axisDirection) {
+  static AxisDirection getDefaultCrossAxisDirection(
+      BuildContext context, AxisDirection axisDirection) {
     switch (axisDirection) {
       case AxisDirection.up:
         assert(debugCheckHasDirectionality(
@@ -710,8 +711,7 @@ class Viewport extends MultiChildRenderObjectWidget {
   }
 
   @override
-  MyRenderViewport createRenderObject(BuildContext context) =>
-      MyRenderViewport(
+  MyRenderViewport createRenderObject(BuildContext context) => MyRenderViewport(
         axisDirection: axisDirection,
         crossAxisDirection: crossAxisDirection ??
             Viewport.getDefaultCrossAxisDirection(context, axisDirection),
@@ -741,22 +741,23 @@ class Viewport extends MultiChildRenderObjectWidget {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties..add(
-        EnumProperty<AxisDirection>('axisDirection', axisDirection))..add(
-        EnumProperty<AxisDirection>(
-            'crossAxisDirection', crossAxisDirection, defaultValue: null))..add(
-        DoubleProperty('anchor', anchor))..add(
-        DiagnosticsProperty<ViewportOffset>('offset', offset));
+    properties
+      ..add(EnumProperty<AxisDirection>('axisDirection', axisDirection))
+      ..add(EnumProperty<AxisDirection>(
+          'crossAxisDirection', crossAxisDirection,
+          defaultValue: null))
+      ..add(DoubleProperty('anchor', anchor))
+      ..add(DiagnosticsProperty<ViewportOffset>('offset', offset));
     if (center != null) {
       properties.add(DiagnosticsProperty<Key>('center', center));
     } else if (children.isNotEmpty && children.first.key != null) {
-      properties.add(DiagnosticsProperty<Key>(
-          'center', children.first.key, tooltip: 'implicit'));
+      properties.add(DiagnosticsProperty<Key>('center', children.first.key,
+          tooltip: 'implicit'));
     }
-    properties..add(
-        DiagnosticsProperty<double>('cacheExtent', cacheExtent))..add(
-        DiagnosticsProperty<CacheExtentStyle>(
-            'cacheExtentStyle', cacheExtentStyle));
+    properties
+      ..add(DiagnosticsProperty<double>('cacheExtent', cacheExtent))
+      ..add(DiagnosticsProperty<CacheExtentStyle>(
+          'cacheExtentStyle', cacheExtentStyle));
   }
 }
 
@@ -764,7 +765,8 @@ class MyRenderViewport extends RenderViewport {
   //MyRenderViewport({required super.crossAxisDirection,
   // required super.offset});
   MyRenderViewport({
-    required super.crossAxisDirection, required super.offset,
+    required super.crossAxisDirection,
+    required super.offset,
     super.axisDirection,
     super.anchor,
     super.children,
@@ -776,9 +778,7 @@ class MyRenderViewport extends RenderViewport {
 
   @override
   Iterable<RenderSliver> get childrenInPaintOrder =>
-      super.childrenInPaintOrder
-          .toList()
-          .reversed;
+      super.childrenInPaintOrder.toList().reversed;
 }
 
 class _ViewportElement extends MultiChildRenderObjectElement

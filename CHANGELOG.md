@@ -1,3 +1,9 @@
+## [0.1.3]
+
+* Added:
+* Fix menuOverlapWidth for tablet mode
+* Added the dragMode setting (never, always, onlyFling). onlyFling - the menu opens only by gesture.
+
 ## [0.1.2]
 
 * Added:

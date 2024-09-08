@@ -50,15 +50,10 @@ final _controller = DrawerMenuController();
 Creating the menu.
 
 ```dart
-DrawerMenu
-(
-controller: _controller,
-menu: _buildMenu(),
-body:
-_buildBody
-(
-)
-,
+DrawerMenu(
+  controller: _controller,
+  menu: _buildMenu(),
+  body: _buildBody(),
 );
 ```
 
@@ -66,27 +61,19 @@ If you want to configure a transparent navigation bar for Android the same way a
 in `initState`):
 
 ```dart
-SystemChrome.setEnabledSystemUIMode
-(
-SystemUiMode
-.
-edgeToEdge
-);
+SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 ```
 
 and set the fields of `SystemUiOverlayStyle`:
 
 ```dart
 systemNavigationBarColor: Colors.transparent,systemNavigationBarContrastEnforced: false
-,
 ```
 
 How to manage DrawerMenu.
 
 ```dart
-_controller.open
-(
-animated: true);
+_controller.open(animated: true);
 _controller.close(animated: true);
 _controller.toggle(animated: true);
 ```
@@ -94,12 +81,11 @@ _controller.toggle(animated: true);
 You can subscribe to state change events isOpen, scrollPosition, isTablet using the controller.
 
 ```dart
-ValueListenableBuilder<bool>
-(
-valueListenable: _controller.isOpenNotifier,
-builder: (context, value, _) {
-return Text(value ? "open": "closed");
-}
+ValueListenableBuilder<bool>(
+  valueListenable: _controller.isOpenNotifier,
+  builder: (context, value, _) {
+    return Text(value ? "open": "closed");
+  }
 )
 ```
 
@@ -120,6 +106,7 @@ return Text(value ? "open": "closed");
 | bodyParallaxFactor       |        `double`         | Multiplier for the parallax effect applied to the body when the menu is opened. 0 - the body moves together with the menu. 1 - the body stays in place. Default is 0.5. |
 | useRepaintBoundaries     |         `bool`          |                     Use `RepaintBoundary` to isolate the rendering of the menu and body widgets for improve repaints performance. Default is True.                      |
 | backgroundColor          |         `Color`         |                                                    Background color under the menu and body.Default is Colors.white.                                                    |
+| dragMode          |         `DragMode`         |                                                    Drag mode setting (never, always, onlyFling). onlyFling - the menu opens only by gesture.                                                    |
 
 ---
 
@@ -141,8 +128,21 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Drawer menu Demo',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
+      theme: ThemeData.light(useMaterial3: false).copyWith(
+        appBarTheme: const AppBarTheme(
+            backgroundColor: Colors.black,
+            foregroundColor: Colors.white,
+            systemOverlayStyle: SystemUiOverlayStyle(
+              // Android part.
+              statusBarColor: Colors.transparent,
+              statusBarIconBrightness: Brightness.light,
+              systemNavigationBarColor: Colors.transparent,
+              systemNavigationBarContrastEnforced: false,
+              systemNavigationBarIconBrightness: Brightness.light,
+              // iOS part.
+              // When Android setup dark iOS light one. Hmm.
+              statusBarBrightness: Brightness.dark,
+            )),
       ),
       home: const MyHomePage(title: 'Drawer menu Demo'),
       debugShowCheckedModeBanner: false,
@@ -161,9 +161,12 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   final _controller = DrawerMenuController();
+  /// If _selectedContent is even, a page without scrolling 
+  /// and with menu opening by the fling gesture is shown. 
+  /// Otherwise, a scrollable list is displayed.
   int _selectedContent = 0;
   final double _rightMargin = 70.0;
-  final double _menuOverlapWidth = 50;
+  final double _menuOverlapWidth = 20;
 
   @override
   void initState() {
@@ -181,6 +184,8 @@ class _MyHomePageState extends State<MyHomePage> {
       menuOverlapWidth: _menuOverlapWidth,
       shadowWidth: _rightMargin + _menuOverlapWidth,
       shadowColor: const Color(0x66000000),
+      dragMode:
+          _selectedContent % 2 != 0 ? DragMode.always : DragMode.onlyFling,
     );
   }
 
@@ -203,7 +208,7 @@ class _MyHomePageState extends State<MyHomePage> {
     Widget menu = WaveBorder(
         waveWidth: _menuOverlapWidth,
         child: SafeArea(
-          child: listView,
+          child: Material(color: Colors.transparent, child: listView),
         ));
 
     // Applying status bar and navigation bar theme settings.
@@ -247,59 +252,70 @@ class _MyHomePageState extends State<MyHomePage> {
           );
         });
 
-    /// PageView part
-    Widget pageView = Container(
-      color: Colors.black12,
-      height: 150,
-      child: PageView.builder(
-        physics: const ClampingScrollPhysics(),
-        itemBuilder: (context, index) =>
-            Center(
-              child: Text(
-                "Nested PageView\nPage $index",
-                textAlign: TextAlign.center,
-              ),
-            ),
-      ),
-    );
-
-    /// Content part
-    Widget content = Expanded(
-      child: Container(
-        color: Colors.black.withOpacity(0.05),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text("Content $_selectedContent"),
-              // scrollPosition subscription (0-1)
-              ValueListenableBuilder<double>(
-                  valueListenable: _controller.scrollPositionNotifier,
-                  builder: (context, value, _) {
-                    return Text(value.toStringAsFixed(2));
-                  }),
-              // isOpen subscription
-              ValueListenableBuilder<bool>(
-                  valueListenable: _controller.isOpenNotifier,
-                  builder: (context, value, _) {
-                    return Text(value ? "open" : "closed");
-                  }),
-            ],
-          ),
-        ),
-      ),
-    );
-
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
         centerTitle: true,
         leading: leadingWidget,
       ),
-      body: Column(
-        children: [pageView, content],
+      body: _buildContent(context, _selectedContent),
+    );
+  }
+
+  Widget _buildContent(BuildContext context, int index) {
+    /// PageView part
+    Widget pageView = Container(
+      color: Colors.black12,
+      height: 150,
+      child: PageView.builder(
+        physics: const ClampingScrollPhysics(),
+        itemBuilder: (context, index) => Center(
+          child: Text(
+            "Nested PageView\nPage $index",
+            textAlign: TextAlign.center,
+          ),
+        ),
       ),
     );
+
+    /// Content part
+    Widget content = Container(
+      color: Colors.black.withOpacity(0.05),
+      padding: const EdgeInsets.all(16.0),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text("Content $_selectedContent"),
+            // scrollPosition subscription (0-1)
+            ValueListenableBuilder<double>(
+                valueListenable: _controller.scrollPositionNotifier,
+                builder: (context, value, _) {
+                  return Text(value.toStringAsFixed(2));
+                }),
+            // isOpen subscription
+            ValueListenableBuilder<bool>(
+                valueListenable: _controller.isOpenNotifier,
+                builder: (context, value, _) {
+                  return Text(value ? "open" : "closed");
+                }),
+          ],
+        ),
+      ),
+    );
+
+    if (index % 2 == 0) {
+      return Column(
+        children: [pageView, Expanded(child: content)],
+      );
+    } else {
+      return ListView(
+        children: [
+          pageView,
+          for (int i = 0; i < 100; i++) content,
+        ],
+      );
+    }
   }
 }
 
@@ -312,39 +328,36 @@ class WaveBorder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-        painter: WaveBorderPainter(waveWidth: waveWidth), child: child);
+    return ClipPath(
+      clipper: WaveClipper(waveWidth: waveWidth),
+      child: Container(
+        color: Colors.white,
+        child: child,
+      ),
+    );
   }
 }
 
-class WaveBorderPainter extends CustomPainter {
+class WaveClipper extends CustomClipper<Path> {
   final double waveWidth;
 
-  WaveBorderPainter({required this.waveWidth});
+  WaveClipper({required this.waveWidth});
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.fill;
-
-    final path = Path();
-
-    path.lineTo(size.width, 0);
-    path.quadraticBezierTo(size.width - waveWidth, size.height * 0.25,
-        size.width - waveWidth / 2, size.height * 0.5);
-    path.quadraticBezierTo(size.width, size.height * 0.75,
-        size.width - waveWidth / 2, size.height);
-    path.lineTo(0, size.height);
-    path.close();
-
-    canvas.drawPath(path, paint);
+  Path getClip(Size size) {
+    final path = Path()
+      ..lineTo(size.width, 0)
+      ..quadraticBezierTo(size.width - waveWidth, size.height * 0.25,
+          size.width - waveWidth / 2, size.height * 0.5)
+      ..quadraticBezierTo(size.width, size.height * 0.75,
+          size.width - waveWidth / 2, size.height)
+      ..lineTo(0, size.height)
+      ..close();
+    return path;
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return false;
-  }
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
 }
 ```
 

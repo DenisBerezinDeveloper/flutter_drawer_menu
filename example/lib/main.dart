@@ -13,8 +13,21 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Drawer menu Demo',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
+      theme: ThemeData.light(useMaterial3: false).copyWith(
+        appBarTheme: const AppBarTheme(
+            backgroundColor: Colors.black,
+            foregroundColor: Colors.white,
+            systemOverlayStyle: SystemUiOverlayStyle(
+              // Android part.
+              statusBarColor: Colors.transparent,
+              statusBarIconBrightness: Brightness.light,
+              systemNavigationBarColor: Colors.transparent,
+              systemNavigationBarContrastEnforced: false,
+              systemNavigationBarIconBrightness: Brightness.light,
+              // iOS part.
+              // When Android setup dark iOS light one. Hmm.
+              statusBarBrightness: Brightness.dark,
+            )),
       ),
       home: const MyHomePage(title: 'Drawer menu Demo'),
       debugShowCheckedModeBanner: false,
@@ -33,9 +46,13 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   final _controller = DrawerMenuController();
+
+  /// If _selectedContent is even, a page without scrolling
+  /// and with menu opening by the fling gesture is shown.
+  /// Otherwise, a scrollable list is displayed.
   int _selectedContent = 0;
   final double _rightMargin = 70.0;
-  final double _menuOverlapWidth = 50;
+  final double _menuOverlapWidth = 20;
 
   @override
   void initState() {
@@ -53,6 +70,8 @@ class _MyHomePageState extends State<MyHomePage> {
       menuOverlapWidth: _menuOverlapWidth,
       shadowWidth: _rightMargin + _menuOverlapWidth,
       shadowColor: const Color(0x66000000),
+      dragMode:
+          _selectedContent % 2 != 0 ? DragMode.always : DragMode.onlyFling,
     );
   }
 
@@ -75,7 +94,7 @@ class _MyHomePageState extends State<MyHomePage> {
     Widget menu = WaveBorder(
         waveWidth: _menuOverlapWidth,
         child: SafeArea(
-          child: listView,
+          child: Material(color: Colors.transparent, child: listView),
         ));
 
     // Applying status bar and navigation bar theme settings.
@@ -119,6 +138,17 @@ class _MyHomePageState extends State<MyHomePage> {
           );
         });
 
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.title),
+        centerTitle: true,
+        leading: leadingWidget,
+      ),
+      body: _buildContent(context, _selectedContent),
+    );
+  }
+
+  Widget _buildContent(BuildContext context, int index) {
     /// PageView part
     Widget pageView = Container(
       color: Colors.black12,
@@ -135,42 +165,43 @@ class _MyHomePageState extends State<MyHomePage> {
     );
 
     /// Content part
-    Widget content = Expanded(
-      child: Container(
-        color: Colors.black.withOpacity(0.05),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text("Content $_selectedContent"),
-              // scrollPosition subscription (0-1)
-              ValueListenableBuilder<double>(
-                  valueListenable: _controller.scrollPositionNotifier,
-                  builder: (context, value, _) {
-                    return Text(value.toStringAsFixed(2));
-                  }),
-              // isOpen subscription
-              ValueListenableBuilder<bool>(
-                  valueListenable: _controller.isOpenNotifier,
-                  builder: (context, value, _) {
-                    return Text(value ? "open" : "closed");
-                  }),
-            ],
-          ),
+    Widget content = Container(
+      color: Colors.black.withOpacity(0.05),
+      padding: const EdgeInsets.all(16.0),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text("Content $_selectedContent"),
+            // scrollPosition subscription (0-1)
+            ValueListenableBuilder<double>(
+                valueListenable: _controller.scrollPositionNotifier,
+                builder: (context, value, _) {
+                  return Text(value.toStringAsFixed(2));
+                }),
+            // isOpen subscription
+            ValueListenableBuilder<bool>(
+                valueListenable: _controller.isOpenNotifier,
+                builder: (context, value, _) {
+                  return Text(value ? "open" : "closed");
+                }),
+          ],
         ),
       ),
     );
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-        centerTitle: true,
-        leading: leadingWidget,
-      ),
-      body: Column(
-        children: [pageView, content],
-      ),
-    );
+    if (index % 2 == 0) {
+      return Column(
+        children: [pageView, Expanded(child: content)],
+      );
+    } else {
+      return ListView(
+        children: [
+          pageView,
+          for (int i = 0; i < 100; i++) content,
+        ],
+      );
+    }
   }
 }
 
@@ -183,37 +214,34 @@ class WaveBorder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-        painter: WaveBorderPainter(waveWidth: waveWidth), child: child);
+    return ClipPath(
+      clipper: WaveClipper(waveWidth: waveWidth),
+      child: Container(
+        color: Colors.white,
+        child: child,
+      ),
+    );
   }
 }
 
-class WaveBorderPainter extends CustomPainter {
+class WaveClipper extends CustomClipper<Path> {
   final double waveWidth;
 
-  WaveBorderPainter({required this.waveWidth});
+  WaveClipper({required this.waveWidth});
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.fill;
-
-    final path = Path();
-
-    path.lineTo(size.width, 0);
-    path.quadraticBezierTo(size.width - waveWidth, size.height * 0.25,
-        size.width - waveWidth / 2, size.height * 0.5);
-    path.quadraticBezierTo(size.width, size.height * 0.75,
-        size.width - waveWidth / 2, size.height);
-    path.lineTo(0, size.height);
-    path.close();
-
-    canvas.drawPath(path, paint);
+  Path getClip(Size size) {
+    final path = Path()
+      ..lineTo(size.width, 0)
+      ..quadraticBezierTo(size.width - waveWidth, size.height * 0.25,
+          size.width - waveWidth / 2, size.height * 0.5)
+      ..quadraticBezierTo(size.width, size.height * 0.75,
+          size.width - waveWidth / 2, size.height)
+      ..lineTo(0, size.height)
+      ..close();
+    return path;
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return false;
-  }
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
 }

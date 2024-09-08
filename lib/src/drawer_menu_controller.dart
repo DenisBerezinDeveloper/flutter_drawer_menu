@@ -67,14 +67,4 @@ class DrawerMenuController {
   /// [animated] - do it with animation.
   Future toggle({bool animated = true}) =>
       _state?.toggle(animated: animated) ?? Future.value();
-
-  /// Allow menu to be moved by gestures.
-  void enableDragging() {
-    _state?.enableDragging();
-  }
-
-  /// Disallow moving the menu by gestures.
-  void disableDragging() {
-    _state?.disableDragging();
-  }
 }

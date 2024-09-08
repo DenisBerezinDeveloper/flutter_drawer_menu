@@ -1,6 +1,6 @@
 name: flutter_drawer_menu
 description: An easy to use drawer menu in flutter and can used for navigation
-version: 0.1.2
+version: 0.1.3
 homepage: https://github.com/rododendron88/flutter_drawer_menu
 platforms:
   android:

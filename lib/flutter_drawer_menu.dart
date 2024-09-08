@@ -1,4 +1,4 @@
-library drawer_menu;
+library flutter_drawer_menu;
 
 export 'src/drawer_menu.dart';
 export 'src/drawer_menu_controller.dart';

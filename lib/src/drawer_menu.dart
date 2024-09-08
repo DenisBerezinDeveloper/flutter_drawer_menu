@@ -6,8 +6,11 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_drawer_menu/src/drawer_menu_controller.dart';
 import 'package:flutter_drawer_menu/src/ordered_custom_scroll_view.dart';
+import 'package:flutter_drawer_menu/src/physics/fling_scroll_physics.dart';
 import 'package:flutter_drawer_menu/src/scroll_behavior.dart';
 import 'package:flutter_drawer_menu/src/scroll_notification_manager.dart';
+
+import 'physics/custom_page_scroll_physics.dart';
 
 const _alphaMultiplierForShadowCenter = 0.3;
 
@@ -87,24 +90,29 @@ class DrawerMenu extends StatefulWidget {
   /// Default is Colors.white
   final Color backgroundColor;
 
+  /// Drag mode for the menu.
+  final DragMode dragMode;
+
   /// Creates a widget that displays a slideable menu
   /// in phone mode and a side menu in tablet mode.
-  const DrawerMenu({required this.menu,
-    required this.body,
-    Key? key,
-    this.animationDuration = const Duration(milliseconds: 300),
-    this.tabletModeMinScreenWidth = 600,
-    this.tabletModeSideMenuWidth = 300,
-    this.rightMargin = 70.0,
-    this.menuOverlapWidth = 0.0,
-    this.controller,
-    this.scrimColor = const Color(0x44ffffff),
-    this.scrimBlurEffect = false,
-    this.shadowColor = const Color(0x22000000),
-    this.shadowWidth = 35.0,
-    this.bodyParallaxFactor = 0.5,
-    this.useRepaintBoundaries = true,
-    this.backgroundColor = Colors.white})
+  const DrawerMenu(
+      {required this.menu,
+      required this.body,
+      Key? key,
+      this.animationDuration = const Duration(milliseconds: 300),
+      this.tabletModeMinScreenWidth = 600,
+      this.tabletModeSideMenuWidth = 300,
+      this.rightMargin = 70.0,
+      this.menuOverlapWidth = 0.0,
+      this.controller,
+      this.scrimColor = const Color(0x44ffffff),
+      this.scrimBlurEffect = false,
+      this.shadowColor = const Color(0x22000000),
+      this.shadowWidth = 35.0,
+      this.bodyParallaxFactor = 0.5,
+      this.useRepaintBoundaries = true,
+      this.backgroundColor = Colors.white,
+      this.dragMode = DragMode.always})
       : super(key: key);
 
   @override
@@ -116,22 +124,22 @@ class DrawerMenu extends StatefulWidget {
   /// To return null if there is no [DrawerMenu], use [maybeOf] instead.
   static DrawerMenuState of(BuildContext context) {
     final DrawerMenuState? result =
-    context.findAncestorStateOfType<DrawerMenuState>();
+        context.findAncestorStateOfType<DrawerMenuState>();
     if (result != null) {
       return result;
     }
     throw FlutterError.fromParts(<DiagnosticsNode>[
       ErrorSummary(
         'DrawerMenu.of() called with a context that does not contain '
-            'a DrawerMenuState.',
+        'a DrawerMenuState.',
       ),
       ErrorDescription(
         'No DrawerMenu ancestor could be found starting from the context '
-            'that was passed to DrawerMenu.of(). '
-            'This usually happens when the context provided is from '
-            'the same StatefulWidget as that '
-            'whose build function actually creates the DrawerMenu '
-            'widget being sought.',
+        'that was passed to DrawerMenu.of(). '
+        'This usually happens when the context provided is from '
+        'the same StatefulWidget as that '
+        'whose build function actually creates the DrawerMenu '
+        'widget being sought.',
       ),
       context.describeElement('The context used was'),
     ]);
@@ -168,14 +176,20 @@ class DrawerMenuState extends State<DrawerMenu> {
   /// A [ValueNotifier] that holds menu offset.
   final ValueNotifier<double> _scrollOffsetNotifier = ValueNotifier<double>(0);
 
-  /// Constants for scrollable and non-scrollable menu states.
-  final ScrollPhysics _scrollablePhysics =
-  const PageScrollPhysics(parent: ClampingScrollPhysics());
+  /// Physics for [CustomScrollView]
+  final ScrollPhysics _scrollableAlwaysPhysics =
+      const CustomPageScrollPhysics(parent: ClampingScrollPhysics());
+
+  /// Physics for [CustomScrollView] with fling support
+  final ScrollPhysics _scrollableFlingPhysics =
+      const CustomPageScrollPhysics(parent: FlingScrollPhysics());
+
+  /// Physics for [CustomScrollView] with disabled scrolling
   final ScrollPhysics _neverScrollablePhysics =
-  const NeverScrollableScrollPhysics();
+      const NeverScrollableScrollPhysics();
 
   /// Physics state for [CustomScrollView]
-  late ScrollPhysics _physics = _scrollablePhysics;
+  late ScrollPhysics _physics;
 
   /// Manager for creating a scroll listener
   /// that intercept [OverscrollNotification] events within the body
@@ -195,9 +209,31 @@ class DrawerMenuState extends State<DrawerMenu> {
     _scrollController.addListener(_refreshNotifiers);
     _controller = widget.controller ?? DrawerMenuController();
     _controller.registerState(this);
+    _setupPhysics();
     super.initState();
   }
 
+  @override
+  void didUpdateWidget(covariant DrawerMenu oldWidget) {
+    if (widget.controller != oldWidget.controller) {
+      oldWidget.controller?.unregisterState(this);
+      _controller = widget.controller ?? DrawerMenuController();
+      _controller.registerState(this);
+    }
+    _setupPhysics();
+    super.didUpdateWidget(oldWidget);
+  }
+
+  /// Setup physics for [DrawerMenu]
+  void _setupPhysics() {
+    _physics = widget.dragMode == DragMode.never
+        ? _neverScrollablePhysics
+        : widget.dragMode == DragMode.onlyFling
+            ? _scrollableFlingPhysics
+            : _scrollableAlwaysPhysics;
+  }
+
+  /// Dispose of the [DrawerMenu].
   @override
   void dispose() {
     _controller.unregisterState(this);
@@ -216,7 +252,7 @@ class DrawerMenuState extends State<DrawerMenu> {
     } else {
       _scrollController.jumpTo(-_calculatedDraggableMenuWidth);
     }
-    enableDragging();
+    _enableDragging();
   }
 
   /// Close the menu.
@@ -244,39 +280,18 @@ class DrawerMenuState extends State<DrawerMenu> {
   }
 
   /// Allow menu to be moved by gestures.
-  void enableDragging() {
-    if (_physics != _scrollablePhysics) {
+  void _enableDragging() {
+    if (_physics == _neverScrollablePhysics) {
       setState(() {
-        _physics = _scrollablePhysics;
+        _physics = _scrollableAlwaysPhysics;
       });
     }
-  }
-
-  /// Disallow moving the menu by gestures.
-  void disableDragging() {
-    if (_physics != _neverScrollablePhysics) {
-      setState(() {
-        _physics = _neverScrollablePhysics;
-      });
-    }
-  }
-
-  @override
-  void didUpdateWidget(covariant DrawerMenu oldWidget) {
-    if (widget.controller != oldWidget.controller) {
-      oldWidget.controller?.unregisterState(this);
-      _controller = widget.controller ?? DrawerMenuController();
-      _controller.registerState(this);
-      _refreshNotifiers();
-    }
-
-    super.didUpdateWidget(oldWidget);
   }
 
   /// Refresh all notifiers
   void _refreshNotifiers() {
     final scrollOffset =
-    _scrollController.hasClients ? _scrollController.offset : 0.0;
+        _scrollController.hasClients ? _scrollController.offset : 0.0;
     _refreshController(
       isOpen: _isTabletMode || scrollOffset != 0.0,
       position: _isTabletMode ? 1.0 : _calculateScrollPositionFactor(),
@@ -299,11 +314,10 @@ class DrawerMenuState extends State<DrawerMenu> {
   /// Calculate the position of the menu [0-1].
   /// 0 - closed
   /// 1 - open
-  double _calculateScrollPositionFactor() =>
-      _scrollController.hasClients
-          ? (-_scrollController.offset / _calculatedDraggableMenuWidth)
+  double _calculateScrollPositionFactor() => _scrollController.hasClients
+      ? (-_scrollController.offset / _calculatedDraggableMenuWidth)
           .clamp(0.0, 1.0)
-          : 0.0;
+      : 0.0;
 
   @override
   Widget build(BuildContext context) {
@@ -313,7 +327,7 @@ class DrawerMenuState extends State<DrawerMenu> {
     assert(widget.rightMargin >= 0.0);
     assert(widget.menuOverlapWidth >= 0.0);
     assert(
-    widget.bodyParallaxFactor >= 0.0 && widget.bodyParallaxFactor <= 1.0);
+        widget.bodyParallaxFactor >= 0.0 && widget.bodyParallaxFactor <= 1.0);
     assert(widget.shadowWidth >= 0.0 &&
         widget.shadowWidth <= widget.rightMargin + widget.menuOverlapWidth);
     return LayoutBuilder(
@@ -322,8 +336,8 @@ class DrawerMenuState extends State<DrawerMenu> {
   }
 
   /// Build a widget with known [BoxConstraints].
-  Widget _buildWithConstraints(BuildContext context,
-      BoxConstraints constraints) {
+  Widget _buildWithConstraints(
+      BuildContext context, BoxConstraints constraints) {
     final isFirstLayout = _calculatedDraggableMenuWidth == 0.0;
 
     final double actualDraggableMenuWidth =
@@ -379,28 +393,38 @@ class DrawerMenuState extends State<DrawerMenu> {
   Widget _buildTabletMode(BuildContext context, BoxConstraints constraints) =>
       ColoredBox(
         color: widget.backgroundColor,
-        child: Row(
+        child: Stack(
           children: [
-            SizedBox(
-              width: min(widget.tabletModeSideMenuWidth, constraints.maxWidth),
-              child: Material(
-                  child: Container(
-                    key: _globalKeyMenu,
-                    child: widget.menu,
-                  )),
-            ),
-            Expanded(
+            Positioned(
+                left: min(
+                    widget.tabletModeSideMenuWidth - widget.menuOverlapWidth,
+                    constraints.maxWidth),
+                top: 0,
+                bottom: 0,
+                right: 0,
                 child: Container(
                   key: _globalKeyBody,
                   child: widget.body,
-                ))
+                )),
+            Positioned(
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width:
+                    min(widget.tabletModeSideMenuWidth, constraints.maxWidth),
+                child: Material(
+                    color: Colors.transparent,
+                    child: Container(
+                      key: _globalKeyMenu,
+                      child: widget.menu,
+                    ))),
           ],
         ),
       );
 
   // Build a widget in phone mode.
-  Widget _buildDraggableMenuMode(BuildContext context,
-      BoxConstraints constraints) {
+  Widget _buildDraggableMenuMode(
+      BuildContext context, BoxConstraints constraints) {
     const centerKey = ValueKey('center');
 
     // create scroller with menu and body
@@ -431,8 +455,8 @@ class DrawerMenuState extends State<DrawerMenu> {
   }
 
   // Build a menu part of widget in phone mode.
-  Widget _buildDraggableMenuWidget(BuildContext context,
-      BoxConstraints constraints) {
+  Widget _buildDraggableMenuWidget(
+      BuildContext context, BoxConstraints constraints) {
     // initial menu widget
     Widget widgetMenu = Container(
       key: _globalKeyMenu,
@@ -463,15 +487,14 @@ class DrawerMenuState extends State<DrawerMenu> {
   }
 
   // Build a body part of widget in phone mode.
-  Widget _buildDraggableBodyWidget(BuildContext context,
-      BoxConstraints constraints) {
+  Widget _buildDraggableBodyWidget(
+      BuildContext context, BoxConstraints constraints) {
     // create all needed listeners
     final Widget bodyChild = ValueListenableBuilder<double>(
       valueListenable: _scrollOffsetNotifier,
-      builder: (context, scrollPosition, _) =>
-          ValueListenableBuilder<bool>(
-              valueListenable: _controller.isOpenNotifier,
-              builder: (context, isOpen, _) =>
+      builder: (context, scrollPosition, _) => ValueListenableBuilder<bool>(
+          valueListenable: _controller.isOpenNotifier,
+          builder: (context, isOpen, _) =>
               // build final body widget
               _buildDraggableBodyWidgetWithState(
                   context, constraints, isOpen, scrollPosition)),
@@ -491,7 +514,7 @@ class DrawerMenuState extends State<DrawerMenu> {
     final alphaOfShadowColor = shadowColor.opacity;
 
     final scrollPosition =
-    (-scrollOffset / _calculatedDraggableMenuWidth).clamp(0.0, 1.0);
+        (-scrollOffset / _calculatedDraggableMenuWidth).clamp(0.0, 1.0);
 
     final bodyOffset =
         (scrollOffset - widget.menuOverlapWidth * scrollPosition) *
@@ -516,12 +539,12 @@ class DrawerMenuState extends State<DrawerMenu> {
       widgetShadow = Container(
         decoration: BoxDecoration(
             gradient: LinearGradient(colors: [
-              shadowColor.withOpacity(scrollPosition * alphaOfShadowColor),
-              shadowColor.withOpacity(scrollPosition *
-                  alphaOfShadowColor *
-                  _alphaMultiplierForShadowCenter),
-              shadowColor.withAlpha(0)
-            ])),
+          shadowColor.withOpacity(scrollPosition * alphaOfShadowColor),
+          shadowColor.withOpacity(scrollPosition *
+              alphaOfShadowColor *
+              _alphaMultiplierForShadowCenter),
+          shadowColor.withAlpha(0)
+        ])),
         width: widget.shadowWidth,
       );
 
@@ -601,4 +624,11 @@ class DrawerMenuState extends State<DrawerMenu> {
 
     return widgetBody;
   }
+}
+
+/// Scroll physics for [DrawerMenu]
+enum DragMode {
+  never,
+  always,
+  onlyFling,
 }
